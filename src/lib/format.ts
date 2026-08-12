@@ -21,6 +21,24 @@ export function formatDate(iso: string | null | undefined): string {
   return isValid(date) ? format(date, "d MMM yyyy") : "—";
 }
 
+/**
+ * "2026-08-11" -> "11 Aug", for chart axis ticks. The year is the same on every
+ * tick of a 14-day window, so it is noise there — the tooltip still spells the
+ * full date out with formatDate.
+ */
+export function formatDayMonth(iso: string): string {
+  const date = parseISO(iso);
+  return isValid(date) ? format(date, "d MMM") : iso;
+}
+
+/**
+ * Thousands separators for the dashboard's big numbers. The locale is fixed
+ * rather than left to the browser so the digits do not depend on who is looking.
+ */
+export function formatCount(value: number): string {
+  return value.toLocaleString("en-GB");
+}
+
 /** A Date from the calendar popover, as the API wants it in the query string. */
 export function toApiDate(date: Date): string {
   return format(date, API_DATE_FORMAT);
