@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
-import { PhasePlaceholder } from "@/components/PhasePlaceholder";
+import { Suspense } from "react";
+import { DoctorDetailClient } from "@/components/doctors/DoctorDetailClient";
+import { PageSkeleton } from "@/components/PageSkeleton";
 
 export const metadata: Metadata = {
   title: "Doctor",
@@ -14,10 +16,8 @@ export default async function DoctorDetailPage({
   const { id } = await params;
 
   return (
-    <PhasePlaceholder
-      title="Doctor detail"
-      description={`Profile and patient list for doctor ${id}.`}
-      phase="Phase 7"
-    />
+    <Suspense fallback={<PageSkeleton />}>
+      <DoctorDetailClient doctorId={id} />
+    </Suspense>
   );
 }
