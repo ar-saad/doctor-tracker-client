@@ -2,6 +2,7 @@
 
 import { useId, useState } from "react";
 import { Loader2 } from "lucide-react";
+import type { FilterOption } from "@/components/FilterBar";
 import { Modal, ModalFooter } from "@/components/Modal";
 import { notify } from "@/components/StatusToast";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -25,7 +26,12 @@ import {
   validatePhone,
   type FieldErrors,
 } from "@/lib/validation";
-import { GENDERS, type Gender, type PatientInput } from "@/types";
+import {
+  GENDERS,
+  type Gender,
+  type PatientInput,
+  type PatientUpdateInput,
+} from "@/types";
 
 /**
  * Create and edit a patient.
@@ -35,6 +41,12 @@ import { GENDERS, type Gender, type PatientInput } from "@/types";
  * URL and cannot be forged in the body) but updated on its own resource
  * (PUT /patients/:id). Which one is used follows from whether `patient` was
  * passed, exactly as in DoctorFormModal.
+ *
+ * That asymmetry is also why only the edit mode can offer a doctor picker:
+ * reassignment is a field on PUT /patients/:id, whereas on create the doctor is
+ * the URL. The picker is opt-in via `doctorOptions` — the doctor detail page
+ * has no business letting you file a patient away from the doctor you are
+ * looking at, and does not pass them.
  */
 
 /**
@@ -87,8 +99,18 @@ function validatePatient(values: FormValues): FieldErrors<Field> {
 interface PatientFormModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  /** The doctor a new patient is filed under. Required in create mode. */
+  /**
+   * The doctor this form is filed under: the one a new patient is created for
+   * in create mode (where it is required), and the patient's current doctor in
+   * edit mode, where it seeds the picker below and is the value a change is
+   * measured against.
+   */
   doctorId?: string;
+  /**
+   * Doctors to choose from, as id/name pairs. Passing them turns the doctor
+   * into an editable field; omitting them leaves it fixed. Edit mode only.
+   */
+  doctorOptions?: readonly FilterOption[];
   /** Absent = create. Present = edit that patient. */
   patient?: EditablePatient | null;
   /** Called after the API confirms the write, so the caller can refetch. */
@@ -99,6 +121,7 @@ export function PatientFormModal({
   open,
   onOpenChange,
   doctorId,
+  doctorOptions,
   patient = null,
   onSaved,
 }: PatientFormModalProps) {
@@ -123,6 +146,7 @@ export function PatientFormModal({
         key={patient?._id ?? "new"}
         patient={patient}
         doctorId={doctorId}
+        doctorOptions={doctorOptions}
         pending={pending}
         setPending={setPending}
         onSaved={onSaved}
@@ -135,6 +159,7 @@ export function PatientFormModal({
 interface PatientFormProps {
   patient: EditablePatient | null;
   doctorId: string | undefined;
+  doctorOptions: readonly FilterOption[] | undefined;
   pending: boolean;
   setPending: (pending: boolean) => void;
   onSaved: () => void;
@@ -144,6 +169,7 @@ interface PatientFormProps {
 function PatientForm({
   patient,
   doctorId,
+  doctorOptions,
   pending,
   setPending,
   onSaved,
@@ -165,6 +191,16 @@ function PatientForm({
   );
   const [errors, setErrors] = useState<FieldErrors<Field>>({});
   const [formError, setFormError] = useState<string | null>(null);
+
+  /**
+   * The doctor sits beside `values` rather than inside it: it is not part of the
+   * create payload, so folding it in would make FormValues stop mirroring
+   * PatientInput and give `Field` a member with nothing to validate. A Select
+   * over a known set cannot be empty or malformed anyway — same reasoning as
+   * gender, which is in `values` only because it IS part of the payload.
+   */
+  const [selectedDoctor, setSelectedDoctor] = useState(doctorId ?? "");
+  const showDoctorPicker = isEdit && doctorOptions !== undefined;
 
   function setField(field: Field, value: string) {
     setValues((current) => ({ ...current, [field]: value }));
@@ -208,7 +244,16 @@ function PatientForm({
 
     try {
       if (isEdit) {
-        await api.put(`/patients/${patient._id}`, payload);
+        const update: PatientUpdateInput = { ...payload };
+
+        // Only when it actually moved: the API re-checks that any `doctor` in
+        // the body exists, so resending the current one buys a lookup and
+        // nothing else.
+        if (showDoctorPicker && selectedDoctor !== doctorId) {
+          update.doctor = selectedDoctor;
+        }
+
+        await api.put(`/patients/${patient._id}`, update);
       } else {
         await api.post(`/doctors/${doctorId}/patients`, payload);
       }
@@ -307,6 +352,31 @@ function PatientForm({
         <div className="space-y-2">
           {textField("condition", "Condition", "Hypertension")}
         </div>
+
+        {showDoctorPicker ? (
+          <div className="space-y-2 sm:col-span-2">
+            <Label htmlFor={`${fieldId}-doctor`}>Doctor</Label>
+            <Select
+              value={selectedDoctor}
+              onValueChange={setSelectedDoctor}
+              disabled={pending}
+            >
+              <SelectTrigger id={`${fieldId}-doctor`} className="h-9 w-full">
+                <SelectValue placeholder="Select a doctor" />
+              </SelectTrigger>
+              <SelectContent position="popper">
+                {doctorOptions.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground">
+              Changing this moves the patient to another doctor&apos;s list.
+            </p>
+          </div>
+        ) : null}
       </div>
 
       <ModalFooter>
