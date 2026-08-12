@@ -12,7 +12,7 @@ This is the **frontend** repo and the primary README for the project.
 
 | | |
 | --- | --- |
-| **Live app** | https://doctor-tracker-client.vercel.app |
+| **Live app** | https://doctor-tracker-client-three.vercel.app |
 | **Live API** | https://doctor-tracker-server.onrender.com/api |
 | **Frontend repo** | https://github.com/ar-saad/doctor-tracker-client |
 | **Backend repo** | https://github.com/ar-saad/doctor-tracker-server |
@@ -286,16 +286,16 @@ day in the window, in UTC, to match the UTC bucketing of `$dateToString`.
 | | |
 | --- | --- |
 | **Dashboard** | ![Dashboard](screenshots/dashboard.png) |
-| **Doctors list, filters open** | ![Doctors list with filters](screenshots/doctors-list.png) |
+| **Doctors — search, filters, pagination** | ![Doctors list with search and filters](screenshots/doctors-list.png) |
 | **Doctor detail with patients** | ![Doctor detail](screenshots/doctor-detail.png) |
 | **Patients** | ![Patients](screenshots/patients.png) |
-| **Login** | ![Login](screenshots/login.png) |
+| **Sign in** | ![Sign in](screenshots/login.png) |
 
 Mobile:
 
-| | | |
+| Dashboard | Doctors | Sign in |
 | --- | --- | --- |
-| ![Dashboard on mobile](screenshots/mobile-dashboard.png) | ![Doctors on mobile](screenshots/mobile-doctors.png) | ![Login on mobile](screenshots/mobile-login.png) |
+| ![Dashboard on mobile](screenshots/mobile-dashboard.png) | ![Doctors on mobile](screenshots/mobile-doctors.png) | ![Sign in on mobile](screenshots/mobile-login.png) |
 
 ---
 
